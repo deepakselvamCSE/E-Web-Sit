@@ -1,0 +1,279 @@
+DECLARE
+v_vendor_shonam varchar2(80);
+v_street1 varchar2(3);
+v_gst varchar2(80);
+v_qty_no varchar2(80);
+v_price number:=0;
+v_vendor_total number:=0;
+v_vendor_id number;
+
+BEGIN
+
+SELECT C003,C004,C005,N001,N002,N003,C006
+INTO  v_vendor_shonam,v_street1,v_gst,v_qty_no,v_price,v_vendor_total,v_vendor_id
+from APEX_COLLECTIONS
+where
+collection_name = 'COL_ADJ_DETAILS'
+and C007 = V('APP_USER')
+and seq_id = :P1906_SEQ_ID;
+
+
+
+     p_C003 => :P1906_VENDOR_SHORTNAME,
+     p_C004 => :P1906_STREET_1,
+     p_C005 => :P1906_GSTIN,
+     p_C006 => :P1906_VENDOR_ID,
+     p_N001 => :P1906_QUANTITY_NO,
+     p_N002 => :P1906_PRICE,
+     p_N003 => :P1906_VENDOR_TOTAL,
+
+
+
+
+---------------------------------
+P1906_DOC_ID
+P1906_DOC_NO
+P1906_DOC_DATE
+P1906_PROJECT_ID
+P1906_CUSTOMER_ID
+P1906_CUSTOMER_NAME
+P1906_CUSTOMER_SHORTNAME
+P1906_STREET_2
+P1906_CURRENCY_ID
+P1906_PARITY_TYPE
+P1906_QUANTITY
+P1906_STATUS
+P1906_VENDOR_HOLD
+P1906_REFERENCE_ID
+P1906_REMARKS
+
+--------------------------------
+
+P1902_ITEM_ID
+P1902_MATERIAL_TYPE
+P1902_UOM
+P1902_QUANTITY
+P1902_PRICE
+P1902_ITEM_TOTAL
+P1902_SEQ_ID
+
+------------------------
+
+insert into PU_SAMPLE_TEST_HEADER (VENDOR_ID,VENDOR_SHORTNAME,STREET_1,GSTIN,QUANTITY_NO,PRICE,VENDOR_TOTAL,SEQ_ID)
+VALUES(v_doc_id,:P1906_VENDOR_ID,:P1906_VENDOR_SHORTNAME,P1906_STREET_1,P1906_GSTIN,P1906_QUANTITY_NO,P1906_PRICE,P1906_VENDOR_TOTAL,P1906_SEQ_ID)
+
+------------------
+
+
+INSERT INTO PU_SAMPLE_TEST_HEADER  (DOC_ID,DOC_NO,DOC_DATE,PROJECT_ID,VENDOR_ID,CURRENCY_ID,PARITY_TYPE,QUANTITY,STATUS,VENDOR_HOLD,REFERENCE_ID,CREATED_BY,CREATED_DATE,UPDATED_BY,UPDATED_DATE,REMARKS)
+VALUES(v_doc_id,:P1906_DOC_ID,:P1906_DOC_NO,:P1906_DOC_DATE,:P1906_PROJECT_ID,:P1906_CUSTOMER_ID,:P1906_CUSTOMER_NAME,:P1906_CUSTOMER_SHORTNAME,:P1906_STREET_2,;P1906_CURRENCY_ID,:P1906_PARITY_TYPE,:P1906_QUANTITY,:P1906_STATUS,:P1906_VENDOR_HOLD,:P1906_REFERENCE_ID,;P1906_REMARKS)
+
+
+---------------------------------------
+
+APEX_COLLECTION.ADD_MEMBER (
+     p_COLLECTION_NAME =>'COL_SAMPLE_1906',
+     p_C001 => v_vendor_no,
+     p_C002 => v_vendor_name,
+     p_C003 => :P1906_VENDOR_SHORTNAME,
+     p_C004 => :P1906_STREET_1,
+     p_C005 => :P1906_GSTIN,
+     p_C006 => :P1906_VENDOR_ID,
+     p_N001 => :P1906_QUANTITY_NO,
+     p_N002 => :P1906_PRICE,
+     p_N003 => :P1906_VENDOR_TOTAL,
+     p_C007 =>V('APP_USER')
+
+
+---------------------------------
+
+SELECT APEX_ITEM.DISPLAY_AND_SAVE(1,seq_id)  as "Seq#",
+APEX_ITEM.RADIOGROUP(
+p_idx => 39,
+p_value => seq_id,
+p_selected_value => 'unchecked',
+p_onchange =>'javascript:PopUpSetValue(this);') AS EDIT,
+C001 AS "Item Code",
+C002 "UOM",
+C003 "Adjustment Reason",
+C004 "Item Id",
+C005 "Adj Id",
+N001 "Onhand Stock",
+N002 "Adjustment Qty",
+N003 "Difference",
+N004 "Avg Cost",
+C006 "User"
+FROM APEX_COLLECTIONS 
+WHERE COLLECTION_NAME = 'COL_ADJ_DETAILS'
+
+
+-------------------------
+SELECT PROJECT FROM GLOBAL_SETTINGS WHERE ORGANIZATION_ID = :APP_ORG_ID AND NVL(PROJECT,'N') = 'Y';
+
+0---------------------
+declare
+--v_date date;
+V_customer number;
+
+Begin
+
+if :P1906_CURRENCY_ID ='' THEN
+raise_application_error(-20010,'Enter the Currency no Code');
+end IF ;
+end;
+  /*  BEGIN
+        SELECT NVL(CUSTOMER,'N') INTO V_customer FROM GLOBAL_SETTINGS WHERE ORGANIZATION_ID = :APP_ORG_ID;
+        EXCEPTION WHEN NO_DATA_FOUND THEN V_customer:='N';
+    END;
+
+    IF V_customer = 'Y' THEN
+        IF :P1906_CUSTOMER_ID IS NULL THEN
+            RAISE_APPLICATION_ERROR(-20010,'Enter the customer No.');
+    END IF;
+        END IF;
+
+begin
+
+    begin
+	select  max(doc_date) into  v_date from PU_SAMPLE_TEST_HEADER where organization_id = V('APP_ORG_ID') 
+    and branch_id =v('app_branch_id') and DOC_TYPE = 'Adjustment Stock Qty';
+    exception when no_data_found then null;
+    end;
+    
+	if :P1906_DOC_NO = 'AUTO' then
+
+		if (:P1906_DOC_DATE > SYSDATE) then
+			RAISE_APPLICATION_ERROR(-20001,'Doc Date cannot be greater than current date');
+
+			else if (:P1906_DOC_DATE < v_date) then
+				  RAISE_APPLICATION_ERROR(-20001,'Doc Date cannot be lesser than last transaction date');
+			end if;
+		end if;
+	end if;
+end;
+end;*/
+
+---------------------------------------------------
+
+
+declare
+lv_min_dt date;
+
+
+begin
+    if :P1906_DOC_ID is null then
+        begin
+            SELECT trunc(max(DOC_DATE)) into lv_min_dt from PU_SAMPLE_TEST_HEADER WHERE ORGANIZATION_ID= V('APP_ORG_ID') and status not in ('D') and BRANCH_ID = V('APP_BRANCH_ID');
+            exception when others then null;
+        end;
+    else
+        begin
+            SELECT distinct trunc(max(DOC_DATE)) into lv_min_dt from PU_SAMPLE_TEST_HEADER WHERE ORGANIZATION_ID= V('APP_ORG_ID') and doc_no=:P1906_DOC_NO and BRANCH_ID = V('APP_BRANCH_ID');
+            exception when others then null;
+        end;
+end if;
+
+    return lv_min_dt;
+    exception when others then
+    lv_min_dt := null;
+end;
+
+-----------
+
+
+
+BEGIN
+    :P1913_TRANSFER_DATE_H :=:P1913_TRANSFER_DATE;
+END;
+
+------------------------------------
+
+ DELETE PU_PO_ITEM_DETAILS WHERE PURCHASEORDER_ID=:P1260_PO_ID AND  ORGANIZATION_ID= V('APP_ORG_ID') AND BRANCH_ID = V('APP_BRANCH_ID');  
+
+-------------------------------------
+
+create or replace view vw_sample_display_view(DOC_ID,DOC_NO,status,ITEM_ID,ITEM_CODE,ITEM_DESC,MATERIAL_TYPE,UOM,
+QUANTITY,PRICE,ITEM_TOTAL,ORGANIZATION_ID,BRANCH_ID)
+as
+select A.DOC_ID,A.DOC_NO,a.status,B.ITEM_ID,C.ITEM_CODE,C.ITEM_DESC,C.MATERIAL_TYPE,C.STK_UOM,
+nvl(B.QUANTITY,0),nvl(B.PRICE,0),nvl(B.ITEM_TOTAL,0),A.ORGANIZATION_ID,A.BRANCH_ID
+from
+PU_SAMPLE_DOC_HEADER a,
+PU_SAMPLE_DOC_DETAILS b,
+IN_ITEM_MASTER c
+WHERE
+A.DOC_ID = B.DOC_ID
+
+AND B.ITEM_ID = C.ITEM_ID
+AND B.ORGANIZATION_ID = C.ORGANIZATION_ID
+
+-------------------------------------------
+
+create or replace view vw_sample_test_display_view(DOC_ID,DOC_NO,status,VENDOR_ID,VENDOR_NO,VENDOR_NAME,VENDOR_SHORTNAME,STREET1,GSTIN,QUANTITY_NO,PRICE,VENDOR_TOTAL,ORGANIZATION_ID,BRANCH_ID)
+as
+select A.DOC_ID,A.DOC_NO,a.status,B.VENDOR_ID,C.VENDOR_NO,C.VENDOR_NAME,C.VENDOR_SHORTNAME,C.STREET1,C.GSTIN,nvl(B.QUANTITY_NO,0),nvl(B.PRICE,0),nvl(B.VENDOR_TOTAL,0),A.ORGANIZATION_ID,A.BRANCH_ID
+from
+PU_SAMPLE_TEST_HEADER a,
+PU_VENDOR_SAMPLE_DETAIL b,
+PU_VENDOR_MASTER c+
+
+where
+A.DOC_ID = B.DOC_ID
+
+and B.VENDOR_ID = C.VENDOR_ID
+and B.ORGANIZATION_ID = C.ORGANIZATION_ID
+
+SELECT * from PU_VENDOR_SAMPLE_DETAIL
+
+-------------------------------------------------------
+
+function  PopupItemSelect()
+{
+var PageNo =1350;
+var v_int_no = $v('P1252_EMP_ID');
+var v_req_date =$v('P1252_REQ_DATE');
+var v_proj_id =$v('P1252_CO_ID');
+
+   l_url = 'f?p=&APP_ID.:'+PageNo+':&SESSION.::::';
+
+
+l_url = l_url+'P1350_REQ_DATE'+','+'P1350_INDENTOR'+','+'P1350_PROJECT_ID:'+v_req_date+',' +v_int_no+','+v_proj_id;
+
+    show_prompt(l_url);
+
+}
+function show_prompt(pUrl)
+{
+    generator = window.open(pUrl, "New Popup", "width=1000, height=600");
+    WaitForClose();
+}
+
+function WaitForClose()
+{
+    if(!generator.closed)
+    {
+           setTimeout("WaitForClose()", 500);
+    }
+    else
+    {
+           PopupClosed();
+    }
+}
+
+function PopupClosed()
+{
+    $s('P1252_REFRESH_ITEM');
+}
+
+
+function  PopUpHistory(PageNo,PageVal1)
+{
+ l_url = 'f?p=&APP_ID.:'+PageNo+':&SESSION.::::';
+   l_url = l_url+'P15556_ITEM_ID:'+PageVal1;
+
+ w = open(l_url,"winLov","location=1,Scrollbars=1,resizable=1,width=800,height=450");
+ if (w.opener == null)
+ w.opener = self;
+ w.focus();
+}
+
